@@ -3,5 +3,20 @@
  (modules ast lexer token parser semantic codegen)
  (libraries))
 
-(ocamllex lexer)
-(ocamlyacc parser)
+(rule 
+(targets parser.ml parser.mli parser.output)
+(deps parser.mly)
+(action 
+(chdir %{workspace_root}
+(run ocamlyacc -v lib/parser.mly)))
+)
+
+(rule 
+(targets lexer.ml)
+(deps lexer.mll)
+(action 
+(chdir %{workspace_root}
+(run ocamllex -o lib/lexer.ml lib/lexer.mll)))
+)
+; (ocamllex lexer)
+; (ocamlyacc parser)

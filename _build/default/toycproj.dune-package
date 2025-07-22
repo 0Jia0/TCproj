@@ -1,0 +1,4 @@
+(lang dune 3.17)
+(name toycproj)
+(sections (lib .) (bin ../../bin) (doc ../../doc/toycproj))
+(files (lib (META dune-package opam)) (bin (toycproj)) (doc (README)))

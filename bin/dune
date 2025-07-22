@@ -2,6 +2,7 @@
  (name main)
  (public_name toycproj)
  (libraries toyc)
+ (modes byte exe)
  (modules main))
 
 

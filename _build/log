@@ -1,0 +1,16 @@
+# dune exec bin/main.exe -- test/20.tc
+# OCAMLPARAM: unset
+# Shared cache: enabled-except-user-rules
+# Shared cache location: /home/hwt/.cache/dune/db
+# Workspace root: /home/hwt/sources/lab/CompilerLab/TCproj
+# Auto-detected concurrency: 20
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Dev
+#  ; merlin = true
+#  ; fdo_target_exe = None
+#  ; build_dir = In_build_dir "default"
+#  ; instrument_with = []
+#  }
+$ /home/hwt/.opam/default/bin/ocamlc.opt -config > /tmp/dune_a5061a_output

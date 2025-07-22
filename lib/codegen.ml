@@ -37,6 +37,19 @@ let find_var env name =
   try List.assoc name env.var_offset
   with Not_found -> failwith ("Undefined variable: " ^ name)
 
+(* 计算栈空间需求，不生成代码 *)
+let rec calc_stack_size env = function
+  | Block stmts ->
+      List.fold_left calc_stack_size env stmts
+  | VarDecl (_, name, _) ->
+      add_local_var env name
+  | If (_, s1, s2_opt) ->
+      let env1 = calc_stack_size env s1 in
+      (match s2_opt with Some s2 -> calc_stack_size env1 s2 | None -> env1)
+  | While (_, s) ->
+      calc_stack_size env s
+  | _ -> env
+
 (* 生成表达式代码，结果放 t0 *)
 let rec gen_expr env oc = function
   | Num n -> Printf.fprintf oc "  li %s, %d\n" t0 n
@@ -161,26 +174,30 @@ let gen_function oc func =
     List.mapi (fun i p -> (i, p)) func.params
     |> List.fold_left (fun env (i, p) -> add_param env p.pname i) (new_env ())
   in
-  (* 计算局部变量空间 *)
-  let env_body = gen_stmt env oc ret_label "" "" (Block func.body) in
+  
+  (* 只计算栈空间，不生成代码 *)
+  let env_body = calc_stack_size env (Block func.body) in
   let stack_size = -env_body.current_offset in
   let total_stack = 16 + stack_size in
+  
+  (* 生成函数标签和序言 *)
   Printf.fprintf oc "\n%s:\n" func.name;
-  (* prologue *)
   Printf.fprintf oc "  addi %s, %s, -%d\n" sp sp total_stack;
   Printf.fprintf oc "  sw %s, %d(%s)\n" ra (total_stack-4) sp;
   Printf.fprintf oc "  sw %s, %d(%s)\n" fp (total_stack-8) sp;
   Printf.fprintf oc "  addi %s, %s, %d\n" fp sp total_stack;
+  
   (* 保存前8个参数到fp+8, fp+12... *)
   List.iteri (fun i _ ->
     if i < 8 then
       Printf.fprintf oc "  sw a%d, %d(%s)\n" i (8 + i * 4) fp
   ) func.params;
-  (* 生成函数体 *)
+  
+  (* 生成函数体 - 只调用一次 *)
   ignore (gen_stmt env oc ret_label "" "" (Block func.body));
-  (* return标签 *)
+  
+  (* 返回标签和尾声 *)
   Printf.fprintf oc "%s:\n" ret_label;
-  (* epilogue *)
   Printf.fprintf oc "  lw %s, %d(%s)\n" ra (total_stack-4) sp;
   Printf.fprintf oc "  lw %s, %d(%s)\n" fp (total_stack-8) sp;
   Printf.fprintf oc "  addi %s, %s, %d\n" sp sp total_stack;
@@ -188,5 +205,16 @@ let gen_function oc func =
 
 (* 生成整个程序 *)
 let gen_program oc program =
-  Printf.fprintf oc "  .text\n  .globl main\n";
+  Printf.fprintf oc ".text\n  .globl main\n";
   List.iter (gen_function oc) program
+(* 生成整个程序 *)
+(* let gen_program oc program =
+  Printf.fprintf oc ".text\n";
+  Printf.fprintf oc ".globl _start\n";
+  Printf.fprintf oc "_start:\n";
+  Printf.fprintf oc "  call main\n";
+  Printf.fprintf oc "  li a7, 93\n";     (* exit syscall number *)
+  Printf.fprintf oc "  mv a0, a0\n";     (* exit code in a0 *)
+  Printf.fprintf oc "  ecall\n";         (* system call *)
+  Printf.fprintf oc "\n.globl main\n";
+  List.iter (gen_function oc) program *)

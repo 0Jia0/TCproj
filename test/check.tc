@@ -1,0 +1,7 @@
+ int main () {
+    int n = 1; int result = 1;
+    while/*nested*/(n/*comment*/>/*gt*/1/*comment*/){result=result*/*multiply*/n;n=n-/*decrement*/1/*not using ++ as specified*/;}return/*
+         /*
+         //
+         */ result;
+         }
